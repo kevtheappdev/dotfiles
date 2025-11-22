@@ -99,9 +99,18 @@ ln -sf "$DOTFILES_DIR/.p10k.zsh" "$HOME/.p10k.zsh"
 # Copy iTerm2 preferences (symlink doesn't work well with plist files)
 if [ -f "$DOTFILES_DIR/com.googlecode.iterm2.plist" ]; then
     print_status "Installing iTerm2 preferences..."
+    # Kill iTerm2 if it's running to avoid conflicts
+    pkill -x "iTerm2" 2>/dev/null || true
+    sleep 1
+    
+    # Copy preferences
     cp "$DOTFILES_DIR/com.googlecode.iterm2.plist" "$HOME/Library/Preferences/com.googlecode.iterm2.plist"
-    # Restart iTerm2's preferences system
-    defaults read com.googlecode.iterm2 > /dev/null 2>&1 || true
+    
+    # Force reload preferences
+    defaults write com.googlecode.iterm2 "PrefsCustomFolder" -string "$HOME/Library/Preferences"
+    defaults write com.googlecode.iterm2 "LoadPrefsFromCustomFolder" -bool true
+    
+    print_warning "iTerm2 preferences installed. Please restart iTerm2 completely for changes to take effect."
 fi
 
 # Install fonts for Powerlevel10k and general powerline compatibility
@@ -111,24 +120,41 @@ mkdir -p "$FONT_DIR"
 
 # Install MesloLGS NF fonts (recommended for Powerlevel10k)
 print_status "Installing MesloLGS NF fonts (Powerlevel10k recommended)..."
-for font in "MesloLGS NF Regular.ttf" "MesloLGS NF Bold.ttf" "MesloLGS NF Italic.ttf" "MesloLGS NF Bold Italic.ttf"; do
+MESLO_FONTS=("MesloLGS NF Regular.ttf" "MesloLGS NF Bold.ttf" "MesloLGS NF Italic.ttf" "MesloLGS NF Bold Italic.ttf")
+for font in "${MESLO_FONTS[@]}"; do
     if [ ! -f "$FONT_DIR/$font" ]; then
-        curl -fLo "$FONT_DIR/$font" "https://github.com/romkatv/powerlevel10k-media/raw/master/$font"
+        print_status "Downloading $font..."
+        if curl -fLo "$FONT_DIR/$font" "https://github.com/romkatv/powerlevel10k-media/raw/master/${font// /%20}"; then
+            print_status "✓ $font installed"
+        else
+            print_warning "✗ Failed to download $font"
+        fi
+    else
+        print_status "✓ $font already exists"
     fi
 done
 
 # Install additional powerline fonts for broader compatibility
 print_status "Installing additional Powerline fonts..."
 POWERLINE_FONTS_DIR="/tmp/powerline-fonts"
-if [ ! -d "$POWERLINE_FONTS_DIR" ]; then
-    git clone https://github.com/powerline/fonts.git "$POWERLINE_FONTS_DIR" --depth=1
-    cd "$POWERLINE_FONTS_DIR"
-    ./install.sh
-    cd - > /dev/null
-    rm -rf "$POWERLINE_FONTS_DIR"
-    print_status "Powerline fonts installed successfully"
+
+# Check if we need to install powerline fonts
+if ! ls "$FONT_DIR"/*Powerline* >/dev/null 2>&1; then
+    if git clone https://github.com/powerline/fonts.git "$POWERLINE_FONTS_DIR" --depth=1 --quiet; then
+        cd "$POWERLINE_FONTS_DIR"
+        # Run the install script quietly
+        if ./install.sh > /dev/null 2>&1; then
+            print_status "✓ Powerline fonts installed successfully"
+        else
+            print_warning "✗ Some powerline fonts may have failed to install"
+        fi
+        cd - > /dev/null
+        rm -rf "$POWERLINE_FONTS_DIR"
+    else
+        print_warning "✗ Failed to download powerline fonts repository"
+    fi
 else
-    print_status "Powerline fonts already downloaded"
+    print_status "✓ Powerline fonts already installed"
 fi
 
 # Install Ruby (if chruby is available)
@@ -167,4 +193,18 @@ if [[ "$SHELL" != */zsh ]]; then
     print_warning "You may need to log out and back in for the shell change to take effect."
 fi
 
+# Verify font installation
+print_status "Verifying font installation..."
+if ls "$FONT_DIR"/MesloLGS* >/dev/null 2>&1; then
+    print_status "✓ MesloLGS NF fonts found"
+else
+    print_error "✗ MesloLGS NF fonts not found. You may need to install them manually."
+fi
+
 print_status "Setup complete! 🎉"
+print_status ""
+print_status "Next steps:"
+print_status "1. Restart iTerm2 completely"
+print_status "2. In iTerm2, go to Preferences → Profiles → Text"
+print_status "3. Set font to 'MesloLGS NF' with size 13 (if not already set)"
+print_status "4. Restart your terminal or run 'source ~/.zshrc'"

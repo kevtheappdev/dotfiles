@@ -149,20 +149,47 @@ The install script automatically creates backups of your existing configuration 
 
 ## Troubleshooting
 
+### Font Issues
+**Small font size in iTerm2:**
+1. Restart iTerm2 completely after installation
+2. Go to iTerm2 → Preferences → Profiles → Text
+3. Set Font to "MesloLGS NF" and Size to 13 (or your preference)
+4. Make sure "Use a different font for non-ASCII text" is unchecked
+
+**Fonts not installing:**
+```bash
+# Manual MesloLGS NF installation
+cd ~/Library/Fonts
+curl -fLo "MesloLGS NF Regular.ttf" "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Regular.ttf"
+curl -fLo "MesloLGS NF Bold.ttf" "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Bold.ttf"
+curl -fLo "MesloLGS NF Italic.ttf" "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Italic.ttf"
+curl -fLo "MesloLGS NF Bold Italic.ttf" "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Bold%20Italic.ttf"
+```
+
+### Zsh Startup Issues
+**"Unnecessary output" messages:**
+- The .zshrc has been updated to suppress output from chruby and bun
+- Run `source ~/.zshrc` or restart your terminal
+- If issues persist, check for custom aliases or functions in your shell
+
 ### Zsh Not Default Shell
 ```bash
 chsh -s $(which zsh)
 ```
 
 ### Powerlevel10k Not Working
-1. Ensure you're using a Nerd Font (MesloLGS NF recommended)
+1. Ensure you're using MesloLGS NF font (see Font Issues above)
 2. Run `p10k configure` to reconfigure
 3. Restart your terminal
+4. Check that ~/.p10k.zsh exists
 
 ### iTerm2 Preferences Not Applied
-1. Restart iTerm2 completely
-2. Check that the plist file was copied correctly
-3. You may need to manually import preferences: iTerm2 → Preferences → General → Preferences → Load preferences from a custom folder
+1. **Complete restart**: Quit iTerm2 completely (Cmd+Q) and reopen
+2. Check font settings: Preferences → Profiles → Text
+3. If still not working, manually import:
+   - iTerm2 → Preferences → General → Preferences
+   - Check "Load preferences from a custom folder or URL"
+   - Browse to your dotfiles folder
 
 ### Plugin Issues
 ```bash
@@ -171,6 +198,16 @@ rm -rf ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
 rm -rf ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
 # Then run install script again or install manually
 ```
+
+### Ruby/Bun Issues
+**chruby or bun commands not found:**
+- These are now optional in the .zshrc
+- Install manually if needed:
+  ```bash
+  brew install chruby ruby-install
+  # or for bun:
+  curl -fsSL https://bun.sh/install | bash
+  ```
 
 ## License
 
